@@ -20,16 +20,7 @@
 
 import sys
 
-cdef extern from "<opendax.h>":
-    struct dax_state:
-        pass
-    dax_state *dax_init(char *name)
-    int dax_init_config(dax_state *ds, char *name)
-    int dax_configure(dax_state *ds, int argc, char **argv, int flags)
-
-    int dax_connect(dax_state *ds)
-    int dax_disconnect(dax_state *ds)
-
+cimport pydax
 
 cdef class Client(object):
     cdef dax_state *ds
