@@ -1,4 +1,4 @@
-#  Copyright (c) 2018 Phil Birkelbach
+#  Copyright (c) 2019 Phil Birkelbach
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -27,16 +27,21 @@ class TestBasic(unittest.TestCase):
         x = self.server.poll()
         self.assertIsNone(x)
 
-
-    def test_MinimalSuccess(self):
-        """Minimal Process start/stop test"""
-        c = pydax.Client(b"Dummy")
-        c.configure()
-        c.connect()
-
     def tearDown(self):
         self.server.terminate()
         self.server.wait()
+
+    def test_MinimalSuccess(self):
+        """Minimal Process start/stop test"""
+        c = pydax.Client("Dummy")
+        c.dax_configure()
+        c.dax_connect()
+
+    def test_TypeConstants(self):
+        """Verify that we have access to the constants"""
+        self.assertEqual(pydax.DAX_BOOL, 0x0010)
+
+
 
 
 

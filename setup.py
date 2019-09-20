@@ -20,7 +20,7 @@
 #  This is the setup script for the extension module
 
 from setuptools import setup
-from distutils.extension import Extension
+from setuptools import Extension
 from Cython.Build import cythonize
 
 with open("README.rst", "r") as fh:
@@ -28,7 +28,7 @@ with open("README.rst", "r") as fh:
 
 mod_dax = Extension("pydax", ["pydax/pydax.pyx"], libraries=["dax"])
 
-setup(name='OpenDAX Module',
+setup(name='PyDAX',
       version="0.1.0",
       author="Phil Birkelbach",
       author_email="phil@petrasoft.net",

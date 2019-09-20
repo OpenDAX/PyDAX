@@ -17,121 +17,126 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #
 
-# Data types
-DEF DAX_BOOL    = 0x0010
-DEF DAX_BYTE    = 0x0003
-DEF DAX_SINT    = 0x0013
-DEF DAX_WORD    = 0x0004
-DEF DAX_INT     = 0x0014
-DEF DAX_UINT    = 0x0024
-DEF DAX_DWORD   = 0x0005
-DEF DAX_DINT    = 0x0015
-DEF DAX_UDINT   = 0x0025
-DEF DAX_TIME    = 0x0035
-DEF DAX_REAL    = 0x0045
-DEF DAX_LWORD   = 0x0006
-DEF DAX_LINT    = 0x0016
-DEF DAX_ULINT   = 0x0026
-DEF DAX_LREAL   = 0x0036
+from libc.stdint cimport uint8_t as u_int8_t
+from libc.stdint cimport uint16_t as u_int16_t
+from libc.stdint cimport uint32_t as u_int32_t
+from libc.stdint cimport uint64_t as u_int64_t
+from libc.stdint cimport int8_t, int16_t, int32_t, int64_t
 
-DEF DAX_CUSTOM  = 0x80000000
-
-DEF DAX_1BIT    = 0x0000
-DEF DAX_8BITS   = 0x0003
-DEF DAX_16BITS  = 0x0004
-DEF DAX_32BITS  = 0x0005
-DEF DAX_64BITS  = 0x0006
-
-# Logger
-DEF LOG_ERROR   = 0x00000001
-DEF LOG_MAJOR   = 0x00000002
-DEF LOG_MINOR   = 0x00000004
-DEF LOG_FUNC    = 0x00000008
-DEF LOG_COMM    = 0x00000010
-DEF LOG_MSG     = 0x00000020
-DEF LOG_MSGERR  = 0x00000040
-DEF LOG_CONFIG  = 0x00000080
-DEF LOG_MODULE  = 0x00000100
-DEF LOG_VERBOSE = 0x80000000
-DEF LOG_ALL     = 0xFFFFFFFF
-
-# Library Errors
-DEF ERR_GENERIC   = -1
-DEF ERR_NO_SOCKET = -2
-DEF ERR_2BIG      = -3
-DEF ERR_ARG       = -4
-DEF ERR_NOTFOUND  = -5
-DEF ERR_MSG_SEND  = -6
-DEF ERR_MSG_RECV  = -7
-DEF ERR_TAG_BAD   = -8
-DEF ERR_TAG_DUPL  = -9
-DEF ERR_ALLOC     = -10
-DEF ERR_MSG_BAD   = -11
-DEF ERR_DUPL      = -12
-DEF ERR_NO_INIT   = -13
-DEF ERR_TIMEOUT   = -14
-DEF ERR_ILLEGAL   = -15
-DEF ERR_INUSE     = -16
-DEF ERR_PARSE     = -17
-DEF ERR_ARBITRARY = -18
-DEF ERR_NOTNUMBER = -19
-DEF ERR_EMPTY     = -20
-DEF ERR_BADTYPE   = -21
-DEF ERR_AUTH      = -22
-
-DEF CFG_ARG_NONE     = 0x00
-DEF CFG_ARG_OPTIONAL = 0x01
-DEF CFG_ARG_REQUIRED = 0x02
-DEF CFG_CMDLINE      = 0x04
-DEF CFG_MODCONF      = 0x10
-DEF CFG_NO_VALUE     = 0x20
-
-DEF EVENT_READ     = 0x01
-DEF EVENT_WRITE    = 0x02
-DEF EVENT_CHANGE   = 0x03
-DEF EVENT_SET      = 0x04
-DEF EVENT_RESET    = 0x05
-DEF EVENT_EQUAL    = 0x06
-DEF EVENT_GREATER  = 0x07
-DEF EVENT_LESS     = 0x08
-DEF EVENT_DEADBAND = 0x09
-
-DEF DAX_BYTE_MIN    = 0
-DEF DAX_BYTE_MAX    = 255
-DEF DAX_SINT_MIN    = -128
-DEF DAX_SINT_MAX    = 127
-DEF DAX_WORD_MIN    = 0
-DEF DAX_WORD_MAX    = 65535
-DEF DAX_UINT_MIN    = DAX_WORD_MIN
-DEF DAX_UINT_MAX    = DAX_WORD_MAX
-DEF DAX_INT_MIN     = -32768
-DEF DAX_INT_MAX     = 32767
-DEF DAX_DWORD_MIN   = 0
-DEF DAX_DWORD_MAX   = 4294967295
-DEF DAX_DINT_MIN    = -2147483648
-DEF DAX_DINT_MAX    = 2147483647
-DEF DAX_UDINT_MIN   = DAX_DWORD_MIN
-DEF DAX_UDINT_MAX   = DAX_DWORD_MAX
-DEF DAX_TIME_MIN    = DAX_DWORD_MIN
-DEF DAX_TIME_MAX    = DAX_DWORD_MAX
-DEF DAX_LWORD_MIN   = -9223372036854775808LL
-DEF DAX_LWORD_MAX   = 9223372036854775807LL
-DEF DAX_LINT_MIN    = DAX_LWORD_MIN
-DEF DAX_LINT_MAX    = DAX_LWORD_MAX
-DEF DAX_ULINT_MIN   = 0
-DEF DAX_ULINT_MAX   = 18446744073709551615ULL
-# DEF DAX_REAL_MIN   = -FLT_MAX
-# DEF DAX_REAL_MAX    = FLT_MAX
-# DEF DAX_LREAL_MIN  = -DBL_MAX
-# DEF DAX_LREAL_MAX   = DBL_MAX
-
+DEF DAX_TAGNAME_SIZE = 32
 
 cdef extern from "<opendax.h>":
+    ctypedef u_int8_t   dax_byte
+    ctypedef int8_t     dax_sint
+    ctypedef u_int16_t  dax_word
+    ctypedef int16_t    dax_int
+    ctypedef u_int16_t  dax_uint
+    ctypedef u_int32_t  dax_dword
+    ctypedef int32_t    dax_dint
+    ctypedef u_int32_t  dax_udint
+    ctypedef u_int32_t  dax_time
+    ctypedef float      dax_real
+    ctypedef u_int64_t  dax_lword
+    ctypedef int64_t    dax_lint
+    ctypedef u_int64_t  dax_ulint
+    ctypedef double     dax_lreal
+
+    ctypedef dax_dint   tag_index
+    ctypedef dax_udint  tag_type
+
     struct dax_state:
         pass
+    ctypedef struct dax_cdt:
+        pass
+    struct cdt_iter:
+        const char *name
+        tag_type type
+        int count
+        int byte
+        int bit
+    struct Handle:
+        tag_index index
+        u_int32_t byte
+        unsigned char bit
+        u_int32_t count
+        u_int32_t size
+        tag_type type
+    struct dax_tag:
+        tag_index idx
+        tag_type type
+        unsigned int count
+        char name[DAX_TAGNAME_SIZE + 1]
+
+    ctypedef struct dax_event_id:
+        tag_index index
+        int id
+
     dax_state *dax_init(char *name)
     int dax_init_config(dax_state *ds, char *name)
+    int dax_set_luafunction(dax_state *ds, int (*f)(void *L), char *name)
+    int dax_add_attribute(dax_state *ds, char *name, char *longopt, char shortopt, int flags, char *defvalue)
     int dax_configure(dax_state *ds, int argc, char **argv, int flags)
+    char *dax_get_attr(dax_state *ds, char *name)
+    int dax_set_attr(dax_state *ds, char *name, char *value)
+    int dax_attr_callback(dax_state *ds, char *name, int (*attr_callback)(char *name, char *value))
+    int dax_free_config(dax_state *ds)
+    int dax_free(dax_state *ds)
+
+    void dax_set_debug_topic(dax_state *ds, u_int32_t)
+
+    void dax_set_debug(dax_state *ds, void (*debug)(const char *msg))
+    void dax_set_error(dax_state *ds, void (*error)(const char *msg))
+    void dax_set_log(dax_state *ds, void (*log)(const char *msg))
+
+    void dax_debug(dax_state *ds, int topic, const char *format, ...)
+    void dax_error(dax_state *ds, const char *format, ...)
+    void dax_log(dax_state *ds, const char *format, ...)
+    void dax_fatal(dax_state *ds, const char *format, ...)
 
     int dax_connect(dax_state *ds)
     int dax_disconnect(dax_state *ds)
+
+    # int dax_mod_get(dax_state *ds, char *modname)
+    int dax_mod_set(dax_state *ds, u_int8_t cmd, void *param)
+
+    int dax_tag_add(dax_state *ds, Handle *h, char *name, tag_type type, int count)
+
+    int dax_tag_byname(dax_state *ds, dax_tag *tag, char *name)
+    int dax_tag_byindex(dax_state *ds, dax_tag *tag, tag_index index)
+
+    int dax_tag_handle(dax_state *ds, Handle *h, char *str, int count)
+
+    int dax_get_typesize(dax_state *ds, tag_type type)
+
+    int dax_read(dax_state *ds, tag_index idx, int offset, void *data, size_t size)
+    int dax_write(dax_state *ds, tag_index idx, int offset, void *data, size_t size)
+    int dax_mask(dax_state *ds, tag_index idx, int offset, void *data,
+                 void *mask, size_t size)
+
+    int dax_read_tag(dax_state *ds, Handle handle, void *data)
+    int dax_write_tag(dax_state *ds, Handle handle, void *data)
+    int dax_mask_tag(dax_state *ds, Handle handle, void *data, void *mask)
+
+    int dax_event_add(dax_state *ds, Handle *handle, int event_type, void *data,
+                      dax_event_id *id, void (*callback)(void *udata), void *udata,
+                      void (*free_callback)(void *udata))
+    int dax_event_del(dax_state *ds, dax_event_id id)
+    int dax_event_get(dax_state *ds, dax_event_id id)
+    int dax_event_modify(dax_state *ds, int id)
+    int dax_event_wait(dax_state *ds, int timeout, dax_event_id *id)
+    int dax_event_poll(dax_state *ds, dax_event_id *id)
+    int dax_event_get_fd(dax_state *ds)
+    int dax_event_dispatch(dax_state *ds, dax_event_id *id)
+    int dax_event_string_to_type(char *string)
+    char *dax_event_type_to_string(int type)
+
+    tag_type dax_string_to_type(dax_state *ds, char *type)
+    const char *dax_type_to_string(dax_state *ds, tag_type type)
+
+    dax_cdt *dax_cdt_new(char *name, int *error)
+    int dax_cdt_member(dax_state *ds, dax_cdt *cdt, char *name,
+                       tag_type mem_type, unsigned int count)
+    int dax_cdt_create(dax_state *ds, dax_cdt *cdt, tag_type *type)
+    void dax_cdt_free(dax_cdt *cdt)
+
+    int dax_cdt_iter(dax_state *ds, tag_type type, void *udata, void (*callback)(cdt_iter member, void *udata))
