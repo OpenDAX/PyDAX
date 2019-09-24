@@ -26,6 +26,7 @@ from libc.stdlib cimport malloc, free
 from libc.string cimport memset
 
 include "constants.pxi"
+include "exceptions.pxi"
 cimport pydax
 
 # cdef TYPESIZE(u_int32_t t):
@@ -347,64 +348,3 @@ cdef __python_to_dax(void *buff, data, tag_type t, idx=0):
 cdef void cdt_callback(cdt_iter member, void* udata):
     l = (<object>udata)
     l.append((member.name, member.type, member.count))
-
-# TODO: Probably should make some DAX only Exceptions for all of these
-# This function returns an exception object that depends on the value of the
-# error 'e'
-def getError(e):
-    print(e)
-    exceptions = {
-                    ERR_GENERIC:RuntimeError,
-                    ERR_NO_SOCKET:RuntimeError,
-                    ERR_2BIG:RuntimeError,
-                    ERR_ARG:AttributeError,
-                    ERR_NOTFOUND:AttributeError,
-                    ERR_MSG_SEND:RuntimeError,
-                    ERR_MSG_RECV:RuntimeError,
-                    ERR_TAG_BAD:RuntimeError,
-                    ERR_TAG_DUPL:RuntimeError,
-                    ERR_ALLOC:MemoryError,
-                    ERR_MSG_BAD:RuntimeError,
-                    ERR_DUPL:RuntimeError,
-                    ERR_NO_INIT:RuntimeError,
-                    ERR_TIMEOUT:RuntimeError,
-                    ERR_ILLEGAL:RuntimeError,
-                    ERR_INUSE:RuntimeError,
-                    ERR_PARSE:RuntimeError,
-                    ERR_ARBITRARY:RuntimeError,
-                    ERR_NOTNUMBER:RuntimeError,
-                    ERR_EMPTY:RuntimeError,
-                    ERR_BADTYPE:TypeError,
-                    ERR_AUTH:RuntimeError
-                }
-    descriptions = {
-                    ERR_GENERIC:"",
-                    ERR_NO_SOCKET:"No Socket Found",
-                    ERR_2BIG:"Argument Too Big",
-                    ERR_ARG:"Argument",
-                    ERR_NOTFOUND:"Not Found",
-                    ERR_MSG_SEND:"Message Send Failure",
-                    ERR_MSG_RECV:"Message Receive Failure",
-                    ERR_TAG_BAD:"Bad Tag",
-                    ERR_TAG_DUPL:"Duplicate Tag",
-                    ERR_ALLOC:"Allocation Error",
-                    ERR_MSG_BAD:"Bad Argument",
-                    ERR_DUPL:"Duplicate",
-                    ERR_NO_INIT:"Not Initialized",
-                    ERR_TIMEOUT:"Timeout",
-                    ERR_ILLEGAL:"Illegal",
-                    ERR_INUSE:"In Use",
-                    ERR_PARSE:"Parsing Error",
-                    ERR_ARBITRARY:"Arbitrary",
-                    ERR_NOTNUMBER:"Not a Number",
-                    ERR_EMPTY:"Empty",
-                    ERR_BADTYPE:"Bad Type",
-                    ERR_AUTH:"Not Authorized"
-                   }
-
-    if e in exceptions.keys():
-        d = descriptions[e]
-        ex = exceptions[e]
-        return ex(d)
-    else:
-        return RuntimeError("Unknown Error {}".format(e))
