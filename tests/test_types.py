@@ -56,12 +56,21 @@ class TestTypes(unittest.TestCase):
         result = c.get_cdt("type2")
         self.assertEqual(rlist, result)
 
+    def test_CDT_Add_Nested(self):
+        # Using strings as teh types
+        """Test Adding Nested CDTs"""
+        c = pydax.Client("cdtnest")
+        c.dax_configure()
+        c.dax_connect()
 
-
-    def test_TypeConstants(self):
-        """Verify that we have access to the constants"""
-        self.assertEqual(pydax.DAX_BOOL, 0x0010)
-
+        inlist = [("mem1", pydax.DAX_DINT, 10),("mem2", pydax.DAX_BOOL, 16)]
+        inner = c.add_cdt("type1", inlist)
+        result = c.get_cdt(inner)
+        self.assertEqual(inlist, result)
+        outlist = [("cdtmem", inner, 10), ("mem2", pydax.DAX_REAL, 16)]
+        inner = c.add_cdt("type2", outlist)
+        result = c.get_cdt(inner)
+        self.assertEqual(outlist, result)
 
 
 

@@ -21,12 +21,14 @@
 # cython: c_string_type=unicode, c_string_encoding=utf8
 
 import sys
+import datetime
+from libc.stdlib cimport malloc, free
 
 include "constants.pxi"
 cimport pydax
 
-cdef TYPESIZE(u_int32_t t):
-    return 0x0001 << (t & 0x0F)
+# cdef TYPESIZE(u_int32_t t):
+    # return 0x0001 << (t & 0x0F)
 
 cdef IS_CUSTOM(u_int32_t t):
     return t & DAX_CUSTOM
@@ -39,25 +41,48 @@ class Member():
         self.count = count
         #self.handle = handle
         if IS_CUSTOM(datatype):
+            self.custom = True
             self.members = {}
             cdt = self.client.get_cdt(datatype)
             for member in cdt:
                 m = Member(self.client, member[0], member[1], member[2])
+                self.members[member[0]] = m
             self.__value = None
         else:
-            print("not custom")
+            self.custom = False
             self.members = None
             self.__value = [None] * count
         self.index = None
+        self.path = name
 
     def __getitem__(self, index):
+        if index < 0 or index >= self.count:
+            raise IndexError
         self.index = index
         return self
 
     def __setitem__(self, index, value):
         print("index {} = {}".format(index, value))
 
+    def __getattr__(self, name):
+        try:
+            m = self.members[name]
+            if self.count > 1:
+                if self.index is None:
+                    raise IndexError("{} has a count greater than 1 and needs an index".format(self.name))
+                m.path = self.path + "[" + str(self.index) + "]." + name
+            else:
+                m.path = self.path + "." + name
+
+            return m
+        except KeyError:
+            raise AttributeError
+        except Exception as e:
+            raise e
+
     def getValue(self):
+        if self.custom:
+            raise AttributeError
         if self.index is None:
             if self.count == 1:
                 return self.__value[0]
@@ -69,6 +94,8 @@ class Member():
             return val
 
     def setValue(self, value):
+        if self.custom:
+            raise AttributeError
         if self.index is None:
             if self.count == 1:
                 self.__value[0] = value
@@ -80,8 +107,8 @@ class Member():
 
     value = property(getValue, setValue)
 
-# The client class represents one connection to an OpenDAX Tag Server
 cdef class Client():
+    """Represents one connection to an OpenDAX Tag Server"""
     cdef dax_state *__ds
     cdef char *name
     cdef dict __tags
@@ -147,6 +174,7 @@ cdef class Client():
         return t
 
     def get_cdt(self, datatype):
+        """Retrieves the custom data type and returns a list of it's members"""
         cdef tag_type t
         tlist = []
         if isinstance(datatype, str):
@@ -157,7 +185,55 @@ cdef class Client():
         x = dax_cdt_iter(self.__ds, t, <void*>tlist, cdt_callback)
         return tlist
 
-    # Direct wrappers for libdax library functions
+    def read_tag(self, name, unsigned int count=0):
+        """Reads a tag or part of a tag from the server"""
+        cdef Handle h
+        cdef void *buff
+        x = dax_tag_handle(self.__ds, &h, name, count)
+        if x != 0: raise getError(x)
+        buff = malloc(h.size)
+        if buff == NULL:
+            raise MemoryError
+        try:
+            x = dax_read_tag(self.__ds, h, buff)
+            if x != 0:
+                raise getError(x)
+            if h.count > 1:
+                result = []
+                for n in range(h.count):
+                    result.append(__dax_to_python(buff, h.type, n))
+            else:
+                result = __dax_to_python(buff, h.type)
+        finally:
+            free(buff)
+        return result
+
+    def write_tag(self, name, data):
+        """Writes the data to the server as tagname 'name'"""
+        cdef Handle h
+        cdef void *buff
+
+        try:
+            count = len(data)
+        except TypeError:
+            count = 0
+        x = dax_tag_handle(self.__ds, &h, name, count)
+        if x != 0: raise getError(x)
+        buff = malloc(h.size)
+        if buff == NULL:
+            raise MemoryError
+        try:
+            if h.count > 1:
+                for n in range(h.count):
+                    __python_to_dax(buff, data[n], h.type, n)
+            else:
+                __python_to_dax(buff, data, h.type)
+            x = dax_write_tag(self.__ds, h, buff)
+            if x != 0: raise getError(x)
+        finally:
+            free(buff)
+
+    # Lower level wrappers for libdax library functions
     def dax_configure(self):
         x = dax_configure(self.__ds, 1, [self.name], 0)
         if x != 0: raise getError(x)
@@ -166,19 +242,90 @@ cdef class Client():
         x = dax_connect(self.__ds)
         if x != 0: raise getError(x)
 
-    def dax_tag_add(self, name, datatype, size):
+    def dax_tag_add(self, name, datatype, count=1):
         cdef Handle h
         cdef tag_type t
         if isinstance(datatype, str):
             t = dax_string_to_type(self.__ds, datatype)
         else:
             t = datatype
-        x = dax_tag_add(self.__ds, &h, name, t, size)
+        x = dax_tag_add(self.__ds, &h, name, t, count)
         if x != 0: raise getError(x)
 
-        # self.__tags[name] = Member(self, name, h)
-        # print(self.__tags)
-        # return self.__tags[name]
+
+
+
+cdef __dax_to_python(void *buff, tag_type t, idx=0):
+    """Converts a DAX buffer of data from the server to a Python type"""
+    #print("__dax_to_python() type = {}".format(t))
+    # if t == DAX_BOOL:
+    #     if (<uint8_t *>)
+    # 8 Bits
+    if t == DAX_BYTE:
+        return (<dax_byte *>buff)[idx]
+    elif t == DAX_SINT:
+        return (<dax_sint *>buff)[idx]
+    # 16 Bits
+    elif t == DAX_WORD:
+        return (<dax_word *>buff)[idx]
+    elif t == DAX_INT:
+        return (<dax_int *>buff)[idx]
+    elif t == DAX_UINT:
+        return (<dax_uint *>buff)[idx]
+    # 32 Bits
+    elif t == DAX_DWORD:
+        return (<dax_dword *>buff)[idx]
+    elif t == DAX_DINT:
+        return (<dax_dint *>buff)[idx]
+    elif t == DAX_UDINT:
+        return (<dax_udint *>buff)[idx]
+    elif t == DAX_TIME:
+        return datetime.datetime.fromtimestamp((<dax_time *>buff)[idx])
+    elif t == DAX_REAL:
+        return (<dax_real *>buff)[idx]
+    # 64 Bits
+    elif t == DAX_LWORD:
+        return (<dax_lword *>buff)[idx]
+    elif t == DAX_LINT:
+        return (<dax_lint *>buff)[idx]
+    elif t == DAX_ULINT:
+        return (<dax_ulint *>buff)[idx]
+    elif t == DAX_LREAL:
+        return (<dax_lreal *>buff)[idx]
+
+cdef __python_to_dax(void *buff, data, tag_type t, idx=0):
+    """converts python data to a DAX buffer than can be written to the server"""
+    if t == DAX_BYTE:
+        (<dax_byte *>buff)[idx] = data
+    elif t == DAX_SINT:
+        (<dax_sint *>buff)[idx] = data
+    # 16 Bits
+    elif t == DAX_WORD:
+        (<dax_word *>buff)[idx] = data
+    elif t == DAX_INT:
+        (<dax_int *>buff)[idx] = data
+    elif t == DAX_UINT:
+        (<dax_uint *>buff)[idx] = data
+    # 32 Bits
+    elif t == DAX_DWORD:
+        (<dax_dword *>buff)[idx] = data
+    elif t == DAX_DINT:
+        (<dax_dint *>buff)[idx] = data
+    elif t == DAX_UDINT:
+        (<dax_udint *>buff)[idx] = data
+    elif t == DAX_TIME:
+        (<dax_time *>buff)[idx] = data.timestamp()
+    elif t == DAX_REAL:
+        (<dax_real *>buff)[idx] = data
+    # 64 Bits
+    elif t == DAX_LWORD:
+        (<dax_lword *>buff)[idx] = data
+    elif t == DAX_LINT:
+        (<dax_lint *>buff)[idx] = data
+    elif t == DAX_ULINT:
+        (<dax_ulint *>buff)[idx] = data
+    elif t == DAX_LREAL:
+        (<dax_lreal *>buff)[idx] = data
 
 # This is the callback function for getting the compound data type from
 # the OpenDAX server.  The client calls the dax_cdt_iter() function with
@@ -248,4 +395,4 @@ def getError(e):
         ex = exceptions[e]
         return ex(d)
     else:
-        return RuntimeError("Unknown Error")
+        return RuntimeError("Unknown Error {}".format(e))
