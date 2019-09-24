@@ -23,6 +23,7 @@
 import sys
 import datetime
 from libc.stdlib cimport malloc, free
+from libc.string cimport memset
 
 include "constants.pxi"
 cimport pydax
@@ -169,8 +170,8 @@ cdef class Client():
             x = dax_cdt_create(self.__ds, cdt, &t)
             if x != 0: raise getError(x)
         except Exception as e:
-            raise e
             dax_cdt_free(cdt)
+            raise e
         return t
 
     def get_cdt(self, datatype):
@@ -222,6 +223,7 @@ cdef class Client():
         buff = malloc(h.size)
         if buff == NULL:
             raise MemoryError
+        memset(buff, 0, h.size)
         try:
             if h.count > 1:
                 for n in range(h.count):
@@ -253,15 +255,17 @@ cdef class Client():
         if x != 0: raise getError(x)
 
 
-
-
 cdef __dax_to_python(void *buff, tag_type t, idx=0):
     """Converts a DAX buffer of data from the server to a Python type"""
-    #print("__dax_to_python() type = {}".format(t))
-    # if t == DAX_BOOL:
-    #     if (<uint8_t *>)
+    if t == DAX_BOOL:
+        B = idx // 8
+        b = idx %8
+        if ((<dax_byte *>buff)[B] & (0x01 << b)) == 0:
+            return False
+        else:
+            return True
     # 8 Bits
-    if t == DAX_BYTE:
+    elif t == DAX_BYTE:
         return (<dax_byte *>buff)[idx]
     elif t == DAX_SINT:
         return (<dax_sint *>buff)[idx]
@@ -295,7 +299,15 @@ cdef __dax_to_python(void *buff, tag_type t, idx=0):
 
 cdef __python_to_dax(void *buff, data, tag_type t, idx=0):
     """converts python data to a DAX buffer than can be written to the server"""
-    if t == DAX_BYTE:
+    if t == DAX_BOOL:
+        B = idx // 8
+        b = idx %8
+        if data:
+            (<dax_byte *>buff)[B] |= (0x01 << b)
+        else:
+            (<dax_byte *>buff)[B] &= ~(0x01 << b)
+    # 8 Bits
+    elif t == DAX_BYTE:
         (<dax_byte *>buff)[idx] = data
     elif t == DAX_SINT:
         (<dax_sint *>buff)[idx] = data
