@@ -41,7 +41,6 @@ class Member():
         self.name = name
         self.datatype = datatype
         self.count = count
-        #self.handle = handle
         if IS_CUSTOM(datatype):
             self.custom = True
             self.members = {}
@@ -49,11 +48,9 @@ class Member():
             for member in cdt:
                 m = Member(self.client, member[0], member[1], member[2])
                 self.members[member[0]] = m
-            self.__value = None
         else:
             self.custom = False
             self.members = None
-            self.__value = [None] * count
         self.index = None
         self.path = name
 
@@ -83,28 +80,24 @@ class Member():
             raise e
 
     def getValue(self):
+        """"property function that reads the tag from the server and returns the result"""
         if self.custom:
             raise AttributeError
         if self.index is None:
-            if self.count == 1:
-                return self.__value[0]
-            else:
-                return self.__value
+            val = self.client.read_tag(self.path)
         else:
-            val = self.__value[self.index]
+            val = self.client.read_tag(f"{self.path}[{self.index)}]")
             self.index = None
-            return val
+        return val
 
     def setValue(self, value):
+        """property function that writes the gat to the server"""
         if self.custom:
             raise AttributeError
         if self.index is None:
-            if self.count == 1:
-                self.__value[0] = value
-            else:
-                raise NotImplemented
+            self.client.write_tag(self.path, value)
         else:
-            self.__value[self.index] = value
+            self.client.write_tag(f"{self.path}[{self.index)}]", value)
             self.index = None
 
     value = property(getValue, setValue)
@@ -114,6 +107,7 @@ cdef class Client():
     cdef dax_state *__ds
     cdef char *name
     cdef dict __tags
+    cdef bint clip
 
     def __cinit__(self, name):
         self.name = name
@@ -123,6 +117,8 @@ cdef class Client():
         x = dax_init_config(self.__ds, name)
         if x != 0: raise getError(x)
         self.__tags = {}
+        # If true, data writes will clip to bounds instead of raising Exceptions
+        self.clip = False
 
     def __dealloc__(self):
         dax_free_config(self.__ds)
@@ -132,14 +128,14 @@ cdef class Client():
         try:
             return self.__find_tag(name)
         except:
-            raise AttributeError
+            raise AttributeError(f"{name} is not a member of Client")
 
     def __setattr__(self, name, value):
         print("You tried to set {} to {}".format(name, value))
         if name in self.__tags:
             self.__tags[name].__setattr__(name, value)
         else:
-            raise AttributeError
+            raise AttributeError(f"{name} is not a member of Client")
 
     def __find_tag(self, name):
         cdef dax_tag tag
@@ -210,7 +206,7 @@ cdef class Client():
             free(buff)
         return result
 
-    def write_tag(self, name, data):
+    def write_tag(self, name, data, clip=False):
         """Writes the data to the server as tagname 'name'"""
         cdef Handle h
         cdef void *buff
@@ -228,9 +224,9 @@ cdef class Client():
         try:
             if h.count > 1:
                 for n in range(h.count):
-                    __python_to_dax(buff, data[n], h.type, n)
+                    __python_to_dax(buff, data[n], h.type, n, clip=clip)
             else:
-                __python_to_dax(buff, data, h.type)
+                __python_to_dax(buff, data, h.type, 0, clip=clip)
             x = dax_write_tag(self.__ds, h, buff)
             if x != 0: raise getError(x)
         finally:
@@ -298,8 +294,34 @@ cdef __dax_to_python(void *buff, tag_type t, idx=0):
     elif t == DAX_LREAL:
         return (<dax_lreal *>buff)[idx]
 
-cdef __python_to_dax(void *buff, data, tag_type t, idx=0):
+__limits =  {DAX_BYTE:  (DAX_BYTE_MIN,  DAX_BYTE_MAX),
+             DAX_SINT:  (DAX_SINT_MIN,  DAX_SINT_MAX),
+             DAX_WORD:  (DAX_WORD_MIN,  DAX_WORD_MAX),
+             DAX_INT:   (DAX_INT_MIN,   DAX_INT_MAX),
+             DAX_UINT:  (DAX_UINT_MIN,  DAX_UINT_MAX),
+             DAX_DWORD: (DAX_DWORD_MIN, DAX_DWORD_MAX),
+             DAX_DINT:  (DAX_DINT_MIN,  DAX_DINT_MAX),
+             DAX_UDINT: (DAX_UDINT_MIN, DAX_UDINT_MAX),
+             DAX_TIME:  (DAX_TIME_MIN,  DAX_TIME_MAX),
+             DAX_LWORD: (DAX_LWORD_MIN, DAX_LWORD_MAX),
+             DAX_LINT:  (DAX_LINT_MIN,  DAX_LINT_MAX),
+             DAX_ULINT: (DAX_ULINT_MIN, DAX_ULINT_MAX)
+            }
+
+cdef __python_to_dax(void *buff, data, tag_type t, idx=0, clip=False):
     """converts python data to a DAX buffer than can be written to the server"""
+    if t != DAX_BOOL: # Bounds check
+        l = __limits[t]
+        if data < l[0]:
+            if clip:
+                data = l[0]
+            else:
+                raise OverflowError()
+        elif data > l[1]:
+            if clip:
+                data = l[1]
+            else:
+                raise OverflowError
     if t == DAX_BOOL:
         B = idx // 8
         b = idx %8
