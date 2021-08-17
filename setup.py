@@ -26,7 +26,7 @@ from Cython.Build import cythonize
 with open("README.rst", "r") as fh:
     long_description = fh.read()
 
-mod_dax = Extension("pydax", ["pydax/pydax.pyx"], libraries=["dax"])
+mod_dax = Extension("pydax", ["pydax/pydax.pyx"], libraries=["dax"], include_dirs=['/usr/include/lua5.3'])
 
 setup(name='PyDAX',
       version="0.1.0",
@@ -35,4 +35,5 @@ setup(name='PyDAX',
       description="PyDAX: Python interface for OpenDAX",
       long_description=long_description,
       test_suite='tests',
-      ext_modules=cythonize([mod_dax]))
+      ext_modules=cythonize([mod_dax])
+      )

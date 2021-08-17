@@ -28,6 +28,7 @@ DEF DAX_TAGNAME_SIZE = 32
 cdef extern from "<opendax.h>":
     ctypedef u_int8_t   dax_byte
     ctypedef int8_t     dax_sint
+    ctypedef char       dax_char
     ctypedef u_int16_t  dax_word
     ctypedef int16_t    dax_int
     ctypedef u_int16_t  dax_uint
@@ -54,7 +55,7 @@ cdef extern from "<opendax.h>":
         int count
         int byte
         int bit
-    struct Handle:
+    struct tag_handle:
         tag_index index
         u_int32_t byte
         unsigned char bit
@@ -99,12 +100,12 @@ cdef extern from "<opendax.h>":
     # int dax_mod_get(dax_state *ds, char *modname)
     int dax_mod_set(dax_state *ds, u_int8_t cmd, void *param)
 
-    int dax_tag_add(dax_state *ds, Handle *h, char *name, tag_type type, int count)
+    int dax_tag_add(dax_state *ds, tag_handle *h, char *name, tag_type type, int count, int attr)
 
     int dax_tag_byname(dax_state *ds, dax_tag *tag, char *name)
     int dax_tag_byindex(dax_state *ds, dax_tag *tag, tag_index index)
 
-    int dax_tag_handle(dax_state *ds, Handle *h, char *str, int count)
+    int dax_tag_handle(dax_state *ds, tag_handle *h, char *str, int count)
 
     int dax_get_typesize(dax_state *ds, tag_type type)
 
@@ -113,11 +114,11 @@ cdef extern from "<opendax.h>":
     int dax_mask(dax_state *ds, tag_index idx, int offset, void *data,
                  void *mask, size_t size)
 
-    int dax_read_tag(dax_state *ds, Handle handle, void *data)
-    int dax_write_tag(dax_state *ds, Handle handle, void *data)
-    int dax_mask_tag(dax_state *ds, Handle handle, void *data, void *mask)
+    int dax_read_tag(dax_state *ds, tag_handle handle, void *data)
+    int dax_write_tag(dax_state *ds, tag_handle handle, void *data)
+    int dax_mask_tag(dax_state *ds, tag_handle handle, void *data, void *mask)
 
-    int dax_event_add(dax_state *ds, Handle *handle, int event_type, void *data,
+    int dax_event_add(dax_state *ds, tag_handle *handle, int event_type, void *data,
                       dax_event_id *id, void (*callback)(void *udata), void *udata,
                       void (*free_callback)(void *udata))
     int dax_event_del(dax_state *ds, dax_event_id id)

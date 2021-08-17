@@ -1,0 +1,21 @@
+Add basic configuration information to the Client.__init__() function like
+serverip, socket etc.  Possibly even a flag to tell it to run the configuration
+and connect immediately as well.
+
+Test Adding tags with all the basic data types, as well as some custom data
+types.  Add with using the type by name and by number.  Add arrays of all
+the above as well.
+
+There seems to be a bug where a really messed up response comes back from
+the server when we have a duplicate CDT.
+
+Make the timestamp conversion configurable within in the module by assigning
+some kind of functions for conversion.  Use datetime.datetime as default
+
+Test times because the server recently switched to 64 bits
+
+Make __dax_to_python() and __python_to_dax() deal with CDTs via dictionaries
+
+Add event handling functions
+
+Add mapping functions

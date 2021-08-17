@@ -22,7 +22,7 @@ import pydax
 class TestTypes(unittest.TestCase):
 
     def setUp(self):
-        self.server = subprocess.Popen(["tagserver"])
+        self.server = subprocess.Popen(["tagserver", "-v"])
         time.sleep(0.1)
         x = self.server.poll()
         self.assertIsNone(x)
@@ -47,7 +47,7 @@ class TestTypes(unittest.TestCase):
         result = c.get_cdt("type1")
         self.assertEqual(tlist, result)
 
-        # Using strings as teh types
+        # Using strings as the types
         tlist = [("mem1", "DINT", 10),("mem2", "BOOL", 16)]
         rlist = [("mem1", pydax.DAX_DINT, 10),("mem2", pydax.DAX_BOOL, 16)]
         t = c.add_cdt("type2", tlist)
@@ -68,6 +68,7 @@ class TestTypes(unittest.TestCase):
         result = c.get_cdt(inner)
         self.assertEqual(inlist, result)
         outlist = [("cdtmem", inner, 10), ("mem2", pydax.DAX_REAL, 16)]
+        print("What the????", inner)
         inner = c.add_cdt("type2", outlist)
         result = c.get_cdt(inner)
         self.assertEqual(outlist, result)

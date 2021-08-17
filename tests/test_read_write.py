@@ -202,6 +202,8 @@ class TestWrite(unittest.TestCase):
             with self.assertRaises(OverflowError):
                 c.write_tag(each[0], each[1])
 
+        with self.assertRaises(TypeError):
+            c.write_tag("d_int", "3")
 
     def test_write_array_ints(self):
         """Test writing integers"""

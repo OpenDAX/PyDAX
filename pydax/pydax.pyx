@@ -185,7 +185,7 @@ cdef class Client():
 
     def read_tag(self, name, unsigned int count=0):
         """Reads a tag or part of a tag from the server"""
-        cdef Handle h
+        cdef tag_handle h
         cdef void *buff
         x = dax_tag_handle(self.__ds, &h, name, count)
         if x != 0: raise getError(x)
@@ -208,7 +208,7 @@ cdef class Client():
 
     def write_tag(self, name, data, clip=False):
         """Writes the data to the server as tagname 'name'"""
-        cdef Handle h
+        cdef tag_handle h
         cdef void *buff
 
         try:
@@ -241,14 +241,14 @@ cdef class Client():
         x = dax_connect(self.__ds)
         if x != 0: raise getError(x)
 
-    def dax_tag_add(self, name, datatype, count=1):
-        cdef Handle h
+    def dax_tag_add(self, name, datatype, count=1, attr=0):
+        cdef tag_handle h
         cdef tag_type t
         if isinstance(datatype, str):
             t = dax_string_to_type(self.__ds, datatype)
         else:
             t = datatype
-        x = dax_tag_add(self.__ds, &h, name, t, count)
+        x = dax_tag_add(self.__ds, &h, name, t, count, attr)
         if x != 0: raise getError(x)
 
 
@@ -266,6 +266,8 @@ cdef __dax_to_python(void *buff, tag_type t, idx=0):
         return (<dax_byte *>buff)[idx]
     elif t == DAX_SINT:
         return (<dax_sint *>buff)[idx]
+    elif t == DAX_CHAR:
+        return (<dax_char *>buff)[idx]
     # 16 Bits
     elif t == DAX_WORD:
         return (<dax_word *>buff)[idx]
@@ -296,6 +298,7 @@ cdef __dax_to_python(void *buff, tag_type t, idx=0):
 
 __limits =  {DAX_BYTE:  (DAX_BYTE_MIN,  DAX_BYTE_MAX),
              DAX_SINT:  (DAX_SINT_MIN,  DAX_SINT_MAX),
+             DAX_CHAR:  (DAX_CHAR_MIN,  DAX_CHAR_MAX),
              DAX_WORD:  (DAX_WORD_MIN,  DAX_WORD_MAX),
              DAX_INT:   (DAX_INT_MIN,   DAX_INT_MAX),
              DAX_UINT:  (DAX_UINT_MIN,  DAX_UINT_MAX),
@@ -305,7 +308,9 @@ __limits =  {DAX_BYTE:  (DAX_BYTE_MIN,  DAX_BYTE_MAX),
              DAX_TIME:  (DAX_TIME_MIN,  DAX_TIME_MAX),
              DAX_LWORD: (DAX_LWORD_MIN, DAX_LWORD_MAX),
              DAX_LINT:  (DAX_LINT_MIN,  DAX_LINT_MAX),
-             DAX_ULINT: (DAX_ULINT_MIN, DAX_ULINT_MAX)
+             DAX_ULINT: (DAX_ULINT_MIN, DAX_ULINT_MAX),
+             DAX_REAL: (DAX_REAL_MIN, DAX_REAL_MAX),
+             DAX_LREAL: (DAX_LREAL_MIN, DAX_LREAL_MAX)
             }
 
 cdef __python_to_dax(void *buff, data, tag_type t, idx=0, clip=False):
@@ -334,6 +339,8 @@ cdef __python_to_dax(void *buff, data, tag_type t, idx=0, clip=False):
         (<dax_byte *>buff)[idx] = data
     elif t == DAX_SINT:
         (<dax_sint *>buff)[idx] = data
+    elif t == DAX_CHAR:
+        (<dax_char *>buff)[idx] = data
     # 16 Bits
     elif t == DAX_WORD:
         (<dax_word *>buff)[idx] = data
